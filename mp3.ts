@@ -236,6 +236,38 @@ namespace makerbit {
     }
   }
 
+    /**
+     * Plays a track from a folder and waits for completion.
+     * @param track track index, eg:1
+     * @param folder folder index, eg:1
+     */
+    //% subcategory="MP3"
+    //% blockId="makerbit_mp3_play_track_simple" block="play MP3 track simple %track"
+    //% track.min=1 track.max=255
+    //% folder.min=1 folder.max=99
+    //% weight=49
+    export function playMp3TrackSimple(track: number): void {
+        if (!deviceState) {
+            connectSerialMp3(DigitalPin.P0, DigitalPin.P1);
+        }
+
+        deviceState.track = Math.min(
+            Math.max(track, 1),
+            YX5300.MAX_TRACKS_PER_FOLDER
+        );
+        deviceState.folder = 1 //Math.min(Math.max(folder, 1), 99);
+        deviceState.playMode = PlayMode.Track;
+        deviceState.repeat = Mp3Repeat.No;
+        deviceState.maxTracksInFolder = YX5300.MAX_TRACKS_PER_FOLDER;
+        playTrackOnDeviceSimple(deviceState);
+        /*
+        while (deviceState.isPlaying) {
+            basic.pause(500);
+            sendCommand(YX5300.queryStatus());
+        }
+        */
+    }
+
   /**
    * Plays a track from a folder.
    * @param track track index, eg:1
@@ -311,6 +343,29 @@ namespace makerbit {
 
     deviceState.lastTrackEventValue = deviceState.track;
   }
+
+    function playTrackOnDeviceSimple(targetState: DeviceState): void {
+        deviceState.previousTrackCompletedResponse = -1;
+        deviceState.isPlaying = true;
+
+        sendCommand(
+            YX5300.playTrack(targetState.track)
+        );
+
+        if (
+            targetState.playMode === PlayMode.Track &&
+            targetState.repeat === Mp3Repeat.Forever
+        ) {
+            sendCommand(YX5300.enableRepeatModeForCurrentTrack());
+        }
+
+        control.raiseEvent(
+            MICROBIT_MAKERBIT_MP3_TRACK_STARTED_ID,
+            deviceState.track
+        );
+
+        deviceState.lastTrackEventValue = deviceState.track;
+    }
 
   /**
    * Sets the volume.
@@ -529,23 +584,35 @@ namespace makerbit {
 
     let commandBuffer: Buffer = undefined;
 
+    function checkSum(buff: Buffer): Buffer {
+        let total = 0;
+        for (let i = 1; i < 7; i++) {
+            total += buff.getUint8(i)
+        }
+        total = 65536 - total
+        buff.setNumber(NumberFormat.UInt8LE, 7, total >> 8);
+        buff.setNumber(NumberFormat.UInt8LE, 8, total & 0xFF);
+        return buff;
+    }
+
     export function composeSerialCommand(
-      command: CommandCode,
-      dataHigh: number,
-      dataLow: number
+        command: CommandCode,
+        dataHigh: number,
+        dataLow: number
     ): Buffer {
-      if (!commandBuffer) {
-        commandBuffer = pins.createBuffer(8);
-        commandBuffer.setNumber(NumberFormat.UInt8LE, 0, 0x7e);
-        commandBuffer.setNumber(NumberFormat.UInt8LE, 1, 0xff);
-        commandBuffer.setNumber(NumberFormat.UInt8LE, 2, 0x06);
-        commandBuffer.setNumber(NumberFormat.UInt8LE, 4, 0x00);
-        commandBuffer.setNumber(NumberFormat.UInt8LE, 7, 0xef);
-      }
-      commandBuffer.setNumber(NumberFormat.UInt8LE, 3, command);
-      commandBuffer.setNumber(NumberFormat.UInt8LE, 5, dataHigh);
-      commandBuffer.setNumber(NumberFormat.UInt8LE, 6, dataLow);
-      return commandBuffer;
+        if (!commandBuffer) {
+            commandBuffer = pins.createBuffer(10);
+            commandBuffer.setNumber(NumberFormat.UInt8LE, 0, 0x7e);
+            commandBuffer.setNumber(NumberFormat.UInt8LE, 1, 0xff);
+            commandBuffer.setNumber(NumberFormat.UInt8LE, 2, 0x06);
+            commandBuffer.setNumber(NumberFormat.UInt8LE, 4, 0x00);
+            commandBuffer.setNumber(NumberFormat.UInt8LE, 9, 0xef);
+        }
+        commandBuffer.setNumber(NumberFormat.UInt8LE, 3, command);
+        commandBuffer.setNumber(NumberFormat.UInt8LE, 5, dataHigh);
+        commandBuffer.setNumber(NumberFormat.UInt8LE, 6, dataLow);
+        checkSum(commandBuffer)
+        return commandBuffer;
     }
 
     export function next(): Buffer {

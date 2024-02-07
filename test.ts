@@ -2,7 +2,9 @@
  * Serial MP3 tests
  */
 
-makerbit.connectSerialMp3(DigitalPin.P0, DigitalPin.P1);
+makerbit.connectSerialMp3(DigitalPin.P8, DigitalPin.P2);
+makerbit.setMp3Volume(15);
+makerbit.playMp3TrackSimple(1);
 
 makerbit.playMp3Track(1, 1);
 makerbit.playMp3TrackFromFolder(1, 1, Mp3Repeat.No);
