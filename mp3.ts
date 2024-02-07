@@ -407,7 +407,7 @@ namespace makerbit {
           if (deviceState.playMode === PlayMode.Track) {
             deviceState.repeat = Mp3Repeat.No;
           }
-          playTrackOnDevice(deviceState);
+          playTrackOnDeviceSimple(deviceState);
         }
         break;
       case Mp3Command.PLAY_PREVIOUS_TRACK:
@@ -417,7 +417,7 @@ namespace makerbit {
         if (deviceState.playMode === PlayMode.Track) {
           deviceState.repeat = Mp3Repeat.No;
         }
-        playTrackOnDevice(deviceState);
+        playTrackOnDeviceSimple(deviceState);
         break;
       case Mp3Command.INCREASE_VOLUME:
         setMp3Volume(deviceState.volume + 1);
