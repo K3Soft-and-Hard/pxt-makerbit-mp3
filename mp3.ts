@@ -530,6 +530,17 @@ namespace makerbit {
     return deviceState ? deviceState.volume : 30;
   }
 
+    /**
+     * Returns the MP3 isPlaying status.
+     */
+    //% subcategory="MP3"
+    //% blockId="makerbit_mp3_isplaying"
+    //% block="MP3 isPlaying"
+    //% weight=37
+    export function mp3IsPlaying(): boolean {
+        return deviceState ? deviceState.isPlaying : false;
+    }
+
   // YX5300 asynchronous serial port control commands
   export namespace YX5300 {
     export interface Response {
